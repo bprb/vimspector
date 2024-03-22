@@ -175,6 +175,8 @@ function! vimspector#internal#balloon#CursorFilter( winid, key ) abort
                 \ . 'line_num = ' . line( '.', a:winid )
                 \ . ')' )
     return 1
+  elseif s:MatchKey( a:key, mappings.copy_value )
+    return popup_filter_menu( a:winid, "\r" )
   endif
 
   return popup_filter_menu( a:winid, a:key )
@@ -184,9 +186,13 @@ endfunction
 
 " Closing {{{
 
-function! vimspector#internal#balloon#CloseCallback( ... ) abort
+function! vimspector#internal#balloon#CloseCallback( id, result ) abort
   let s:popup_win_id = 0
   let s:nvim_border_win_id = 0
+  if a:result > 0
+    let @" = getbufoneline( winbufnr( a:id ), a:result )
+    echo 'Yanked ' . @"
+  endif
   return py3eval( '_vimspector_session.CleanUpTooltip()' )
 endfunction
 

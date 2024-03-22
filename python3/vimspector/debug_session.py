@@ -937,10 +937,35 @@ class DebugSession( object ):
 
     connection: debug_adapter_connection.DebugAdapterConnection
     connection, memoryReference = self._variablesView.GetMemoryReference()
-    if memoryReference is None or connection is None:
-      utils.UserMessage( "Cannot find memory reference for that",
-                         error = True )
-      return
+    if connection is None:
+      connection = self._connection
+      if connection is None:
+        utils.UserMessage( "Missing connection",
+                           error = True )
+        return
+
+      if memoryReference is None:
+          # try the clipboard contents
+          memoryReference = vim.eval("@\"")
+          try:
+            memoryReference = int( memoryReference, 0 )
+            memoryReference = hex( memoryReference )
+          except ValueError:
+            memoryReference = None # nevermind, not a valid hex or number
+
+      memoryReference = utils.AskForInput( 'Memory location? ',
+                                    default_value = memoryReference )
+      if memoryReference is None or memoryReference == '':
+          return
+
+      try:
+        # confirm a valid hex or regular number, then convert back to string
+        memoryReference = int( memoryReference, 0 )
+        memoryReference = str( memoryReference )
+      except ValueError:
+        utils.UserMessage( "Invalid memory reference " + f'{memoryReference}',
+                           error = True )
+        return
 
     if length is None:
       length = utils.AskForInput( 'How much data to display? ',
